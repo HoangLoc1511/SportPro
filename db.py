@@ -3,10 +3,10 @@ import pyodbc
 
 def get_connection():
     # Lấy biến môi trường để cấu hình kết nối
-    server = os.getenv('DB_SERVER', 'localhost')
+    server = os.getenv('DB_SERVER', 'ADMIN-PC')
     database = os.getenv('DB_NAME', 'sportpro')
-    username = os.getenv('DB_USER', '')
-    password = os.getenv('DB_PASS', '')
+    username = os.getenv('DB_USER', 'Admin')
+    password = os.getenv('DB_PASS', '123456')
     driver = '{ODBC Driver 17 for SQL Server}'
 
     if username and password:
