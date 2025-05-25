@@ -2,8 +2,8 @@ import mysql.connector
 
 try:
     conn = mysql.connector.connect(
-        host='your-public-ip',
-        user='root',
+        host='118.68.201.19',
+        user='sa',
         password='123456',
         database='sportpro',
         port=3306
