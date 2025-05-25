@@ -1,12 +1,14 @@
 import os
-import mysql.connector
-from mysql.connector import Error
+import pyodbc
+from dotenv import load_dotenv
+
+load_dotenv()  # load biến môi trường từ file .env
 
 def get_connection():
-    server = os.getenv('DB_SERVER', '118.68.201.19')  # Public IP của bạn
-    database = os.getenv('DB_NAME', 'sportpro')
-    username = os.getenv('DB_USER', 'sa')
-    password = os.getenv('DB_PASSWORD', '123456')
+    server = os.getenv('DB_SERVER')
+    database = os.getenv('DB_NAME')
+    username = os.getenv('DB_USER')
+    password = os.getenv('DB_PASSWORD')
     driver = '{ODBC Driver 17 for SQL Server}'
 
     conn_str = (
@@ -19,9 +21,7 @@ def get_connection():
     )
 
     try:
-        connection = pyodbc.connect(conn_str)
-        return connection
+        return pyodbc.connect(conn_str)
     except pyodbc.Error as e:
-        print(f"Lỗi kết nối CSDL: {e}")
+        print(f"❌ Lỗi kết nối CSDL: {e}")
         raise
-
