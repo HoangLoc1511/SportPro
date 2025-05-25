@@ -5,7 +5,7 @@ from flask_session import Session
 from flask_cors import CORS
 import uuid
 from chatbot_logic import handle_intent  # Đảm bảo bạn import đúng hàm này từ chatbot_logic.py
-
+from db import get_connection 
 app = Flask(__name__)
 
 # CORS: thay bằng domain của bạn nếu cần
