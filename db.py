@@ -2,13 +2,14 @@ import os
 import pyodbc
 from dotenv import load_dotenv
 
-load_dotenv()  # load biến môi trường từ file .env
+# Tự động tải các biến môi trường từ file .env (chỉ dùng khi chạy local)
+load_dotenv()
 
 def get_connection():
-    server = os.getenv('DB_SERVER')
-    database = os.getenv('DB_NAME')
-    username = os.getenv('DB_USER')
-    password = os.getenv('DB_PASSWORD')
+    server = os.getenv('DB_SERVER', '127.0.0.1')   # IP public hoặc 'localhost'
+    database = os.getenv('DB_NAME', 'sportpro')
+    username = os.getenv('DB_USER', 'sa')
+    password = os.getenv('DB_PASSWORD', '123456')
     driver = '{ODBC Driver 17 for SQL Server}'
 
     conn_str = (
@@ -21,7 +22,8 @@ def get_connection():
     )
 
     try:
-        return pyodbc.connect(conn_str)
+        conn = pyodbc.connect(conn_str)
+        return conn
     except pyodbc.Error as e:
         print(f"❌ Lỗi kết nối CSDL: {e}")
         raise
