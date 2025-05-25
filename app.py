@@ -29,6 +29,15 @@ def index():
 def chat():
     user_input = request.json.get("message", "").strip().lower()
     current_intent = session.get('current_intent', None)
+@app.route('/test_db')
+def test_db():
+    try:
+        conn = get_connection()  # Gọi hàm get_connection của bạn
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")  # Thực hiện truy vấn cơ bản để kiểm tra kết nối
+        return "Kết nối cơ sở dữ liệu thành công!"
+    except Exception as e:
+        return f"Kết nối thất bại: {e}"
 
     # Xử lý menu chính & intent chính
     if user_input in ['hi', 'hello', 'xin chào', 'chào', 'menu']:
