@@ -1,16 +1,17 @@
 import os
+import logging
 from flask import Flask, request, render_template, jsonify, session
 from flask_session import Session
 from flask_cors import CORS
 import uuid
-from db import get_connection  # Import get_connection từ db.py
+from chatbot_logic import handle_intent  # Đảm bảo bạn import đúng hàm này từ chatbot_logic.py
 
 app = Flask(__name__)
 
 # CORS: thay bằng domain của bạn nếu cần
 CORS(app, origins=["https://taxinhanhchong.com"], supports_credentials=True)
 
-app.secret_key = 'your-secret-key'  # Đổi thành chuỗi bí mật của bạn
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key')  # Đổi thành chuỗi bí mật của bạn
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
@@ -100,6 +101,5 @@ def chat():
 
 if __name__ == '__main__':
     # Port Render.com thường cung cấp qua biến môi trường PORT
-    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
