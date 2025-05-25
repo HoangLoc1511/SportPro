@@ -65,38 +65,37 @@ def handle_intent(intent, user_input):
                 )
 
         # ---------- 2. TRA CỨU ĐƠN HÀNG ----------
-        elif intent == "order_check_start":
-            return "📦 Vui lòng nhập mã đơn hàng của bạn (ví dụ: SP20230501):"
-
         elif intent == "order_check_details":
-            order_id = user_input.strip()
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT o.order_id, o.status, o.total_amount, o.order_date, c.full_name, o.delivery_address
-                FROM orders o
-                JOIN customers c ON o.customer_id = c.customer_id
-                WHERE o.order_id = ?
-            """, (order_id,))
+    order_id = user_input.strip()
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT o.order_id, o.status, o.total_amount, o.order_date, c.full_name, o.delivery_address
+            FROM orders o
+            JOIN customers c ON o.customer_id = c.customer_id
+            WHERE o.order_id = ?
+        """, (order_id,))
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
 
-            row = cursor.fetchone()
-            cursor.close()
-            conn.close()
-
-            if row:
-                columns = [column[0] for column in cursor.description]
-                result = dict(zip(columns, row))
-                response = (
-                    f"📋 Mã đơn: {result['order_id']}\n"
-                    f"👤 Khách: {result['full_name']}\n"
-                    f"📅 Ngày đặt: {result['order_date']}\n"
-                    f"🧾 Trạng thái: {result['status']}\n"
-                    f"💰 Tổng tiền: {result['total_amount']} VND\n"
-                    f"📍 Giao đến: {result['delivery_address']}"
-                )
-                return response
-            else:
-                return "❌ Mã đơn không hợp lệ hoặc không tồn tại. Vui lòng kiểm tra lại."
+        if row:
+            columns = [column[0] for column in cursor.description]
+            result = dict(zip(columns, row))
+            return (
+                f"📋 Mã đơn: {result['order_id']}\n"
+                f"👤 Khách: {result['full_name']}\n"
+                f"📅 Ngày đặt: {result['order_date']}\n"
+                f"🧾 Trạng thái: {result['status']}\n"
+                f"💰 Tổng tiền: {result['total_amount']} VND\n"
+                f"📍 Giao đến: {result['delivery_address']}"
+            )
+        else:
+            return "❌ Mã đơn không hợp lệ hoặc không tồn tại. Vui lòng kiểm tra lại."
+    except Exception as e:
+        logging.error(f"Lỗi khi tra cứu đơn hàng: {e}")
+        return "⚠️ Đã xảy ra lỗi hệ thống, vui lòng thử lại sau."
 
         # ---------- 3. TÌM CỬA HÀNG ----------
         elif intent == "store_locator":
