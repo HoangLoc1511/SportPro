@@ -6,8 +6,7 @@ from flask_session import Session
 from flask_cors import CORS
 from chatbot_logic import handle_intent
 from db import get_connection
-from dotenv import load_dotenv
-load_dotenv()
+
 
 app = Flask(__name__)
 CORS(app, origins=["*"], supports_credentials=True)
