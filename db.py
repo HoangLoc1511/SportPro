@@ -2,15 +2,19 @@ import os
 import pyodbc
 
 def get_connection():
-    server = os.getenv('DB_SERVER', 'ADMIN-PC')   # Tên máy chủ SQL Server hoặc IP
-    database = os.getenv('DB_NAME', 'sportpro')   # Tên database
+    # Dùng IP nếu deploy trên Render
+    server = os.getenv('DB_SERVER', '192.168.0.106')  # hoặc PUBLIC IP nếu từ Render
+    database = os.getenv('DB_NAME', 'sportpro')
+    username = os.getenv('DB_USER', 'sa')
+    password = os.getenv('DB_PASSWORD', '123456')
     driver = '{ODBC Driver 17 for SQL Server}'
 
     conn_str = (
         f'DRIVER={driver};'
-        f'SERVER={server};'
+        f'SERVER={server},1433;'  # Thêm port 1433
         f'DATABASE={database};'
-        'Trusted_Connection=yes;'
+        f'UID={username};'
+        f'PWD={password};'
         'TrustServerCertificate=yes;'
     )
 
