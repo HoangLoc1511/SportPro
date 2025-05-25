@@ -1,26 +1,18 @@
 import os
-import pyodbc
+import mysql.connector
+from mysql.connector import Error
 
 def get_connection():
-    # Dùng IP nếu deploy trên Render
-    server = os.getenv('DB_SERVER', '192.168.0.106')  # hoặc PUBLIC IP nếu từ Render
-    database = os.getenv('DB_NAME', 'sportpro')
-    username = os.getenv('DB_USER', 'sa')
-    password = os.getenv('DB_PASSWORD', '123456')
-    driver = '{ODBC Driver 17 for SQL Server}'
-
-    conn_str = (
-        f'DRIVER={driver};'
-        f'SERVER={server},1433;'  # Thêm port 1433
-        f'DATABASE={database};'
-        f'UID={username};'
-        f'PWD={password};'
-        'TrustServerCertificate=yes;'
-    )
-
     try:
-        connection = pyodbc.connect(conn_str)
-        return connection
-    except pyodbc.Error as e:
-        print(f"Lỗi kết nối CSDL: {e}")
+        connection = mysql.connector.connect(
+            host=os.getenv('DB_SERVER', 'ADMIN-PC'),  # hoặc IP Public
+            port=int(os.getenv('DB_PORT', 3306)),
+            database=os.getenv('DB_NAME', 'sportpro'),
+            user=os.getenv('DB_USER', 'root'),
+            password=os.getenv('DB_PASSWORD', '123456')
+        )
+        if connection.is_connected():
+            return connection
+    except Error as e:
+        print(f"Lỗi kết nối MySQL: {e}")
         raise
