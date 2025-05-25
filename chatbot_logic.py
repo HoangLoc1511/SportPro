@@ -1,9 +1,12 @@
 import logging
 from db import get_connection
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Cấu hình logging để dễ dàng theo dõi lỗi và thông tin
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 def handle_intent(intent, user_input):
+    logging.info(f"Xử lý intent: {intent}, input: {user_input}")
+
     try:
         if intent == "welcome":
             return (
@@ -15,7 +18,7 @@ def handle_intent(intent, user_input):
                 "4. Chính sách mua hàng"
             )
 
-        # ---------- 1. TƯ VẤN SẢN PHẨM ----------
+        # 1. Tư vấn sản phẩm
         elif intent == "product_advice":
             return (
                 "📦 Bạn muốn tư vấn sản phẩm nào?\n"
@@ -44,60 +47,55 @@ def handle_intent(intent, user_input):
             """, ('%' + keyword + '%', '%' + keyword + '%', '%' + keyword + '%'))
 
             columns = [column[0] for column in cursor.description]
-            results = cursor.fetchall()
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
             cursor.close()
             conn.close()
 
             if results:
-                rows = [dict(zip(columns, row)) for row in results]
-                response = "\n\n".join([
-                    f"✔️ {row['product_name']}\n"
-                    f"Màu: {row['color']} | Size: {row['size']}\n"
-                    f"Giá: {row['price']} VND\n"
-                    f"Ảnh: {row['image_url']}"
-                    for row in rows
+                return "\n\n".join([
+                    f"✔ {row['product_name']}\nMàu: {row['color']} | Size: {row['size']}\nGiá: {row['price']} VND\nẢnh: {row['image_url']}"
+                    for row in results
                 ])
-                return response
             else:
                 return (
                     "❌ Không tìm thấy sản phẩm phù hợp với từ khóa bạn nhập.\n"
                     "Bạn có thể thử lại với tên sản phẩm hoặc thương hiệu khác như: 'áo thể thao', 'giày nike', 'túi adidas'..."
                 )
 
-        # ---------- 2. TRA CỨU ĐƠN HÀNG ----------
+        # 2. Tra cứu đơn hàng
+        elif intent == "order_check_start":
+            return "📦 Vui lòng nhập mã đơn hàng của bạn (ví dụ: SP20230501):"
+
         elif intent == "order_check_details":
-    order_id = user_input.strip()
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT o.order_id, o.status, o.total_amount, o.order_date, c.full_name, o.delivery_address
-            FROM orders o
-            JOIN customers c ON o.customer_id = c.customer_id
-            WHERE o.order_id = ?
-        """, (order_id,))
-        row = cursor.fetchone()
-        cursor.close()
-        conn.close()
+            order_id = user_input.strip()
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT o.order_id, o.status, o.total_amount, o.order_date, c.full_name, o.delivery_address
+                FROM orders o
+                JOIN customers c ON o.customer_id = c.customer_id
+                WHERE o.order_id = ?
+            """, (order_id,))
 
-        if row:
-            columns = [column[0] for column in cursor.description]
-            result = dict(zip(columns, row))
-            return (
-                f"📋 Mã đơn: {result['order_id']}\n"
-                f"👤 Khách: {result['full_name']}\n"
-                f"📅 Ngày đặt: {result['order_date']}\n"
-                f"🧾 Trạng thái: {result['status']}\n"
-                f"💰 Tổng tiền: {result['total_amount']} VND\n"
-                f"📍 Giao đến: {result['delivery_address']}"
-            )
-        else:
-            return "❌ Mã đơn không hợp lệ hoặc không tồn tại. Vui lòng kiểm tra lại."
-    except Exception as e:
-        logging.error(f"Lỗi khi tra cứu đơn hàng: {e}")
-        return "⚠️ Đã xảy ra lỗi hệ thống, vui lòng thử lại sau."
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
 
-        # ---------- 3. TÌM CỬA HÀNG ----------
+            if row:
+                columns = [desc[0] for desc in cursor.description]
+                result = dict(zip(columns, row))
+                return (
+                    f"📋 Mã đơn: {result['order_id']}\n"
+                    f"👤 Khách: {result['full_name']}\n"
+                    f"📅 Ngày đặt: {result['order_date']}\n"
+                    f"🧾 Trạng thái: {result['status']}\n"
+                    f"💰 Tổng tiền: {result['total_amount']} VND\n"
+                    f"📍 Giao đến: {result['delivery_address']}"
+                )
+            else:
+                return "❌ Mã đơn không hợp lệ hoặc không tồn tại. Vui lòng kiểm tra lại."
+
+        # 3. Tìm cửa hàng
         elif intent == "store_locator":
             keyword = user_input.lower()
             conn = get_connection()
@@ -108,25 +106,20 @@ def handle_intent(intent, user_input):
                 WHERE city LIKE ?
             """, ('%' + keyword + '%',))
 
-            results = cursor.fetchall()
+            columns = [column[0] for column in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
             cursor.close()
             conn.close()
 
             if results:
-                columns = [column[0] for column in cursor.description]
-                rows = [dict(zip(columns, row)) for row in results]
-                response = "\n\n".join([
-                    f"🏬 {row['store_name']}\n"
-                    f"📍 {row['address']}\n"
-                    f"📞 {row['phone']}\n"
-                    f"🕒 Giờ mở cửa: {row['opening_hours']}"
-                    for row in rows
+                return "\n\n".join([
+                    f"🏬 {row['store_name']}\n📍 {row['address']}\n📞 {row['phone']}\n🕒 Giờ mở cửa: {row['opening_hours']}"
+                    for row in results
                 ])
-                return response
             else:
-                return "❌ Không tìm thấy cửa hàng nào ở khu vực bạn cung cấp. Bạn thử tên khác nhé!"
+                return "❌ Mình không tìm thấy cửa hàng nào ở khu vực bạn cung cấp. Bạn thử tên khác nhé!"
 
-        # ---------- 4. HỎI VỀ CHÍNH SÁCH ----------
+        # 4. Hỏi về chính sách
         elif intent == "faq":
             keyword = user_input.lower()
             conn = get_connection()
@@ -135,22 +128,20 @@ def handle_intent(intent, user_input):
                 SELECT question, answer FROM faqs WHERE topic LIKE ?
             """, ('%' + keyword + '%',))
 
-            results = cursor.fetchall()
+            columns = [column[0] for column in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
             cursor.close()
             conn.close()
 
             if results:
-                columns = [column[0] for column in cursor.description]
-                rows = [dict(zip(columns, row)) for row in results]
-                response = "\n\n".join([
+                return "\n\n".join([
                     f"❓ {row['question']}\n💡 {row['answer']}"
-                    for row in rows
+                    for row in results
                 ])
-                return response
             else:
                 return "❌ Mình chưa có thông tin về chính sách đó. Bạn có thể hỏi: vận chuyển, đổi trả, bảo hành..."
 
-        # ---------- MẶC ĐỊNH ----------
+        # Fallback cho các câu không nhận dạng được intent
         else:
             return (
                 "🤖 Mình chưa hiểu câu hỏi của bạn.\n"
@@ -158,5 +149,5 @@ def handle_intent(intent, user_input):
             )
 
     except Exception as e:
-        logging.error(f"Lỗi xử lý intent '{intent}' với input '{user_input}': {e}")
+        logging.error(f"Lỗi xử lý intent '{intent}': {e}")
         return "⚠️ Đã xảy ra lỗi hệ thống, vui lòng thử lại sau."
