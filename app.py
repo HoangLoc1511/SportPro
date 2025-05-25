@@ -1,17 +1,16 @@
 import os
+import uuid
 import logging
 from flask import Flask, request, render_template, jsonify, session
 from flask_session import Session
 from flask_cors import CORS
-import uuid
-from chatbot_logic import handle_intent  # Đảm bảo bạn import đúng hàm này từ chatbot_logic.py
-from db import get_connection 
+from chatbot_logic import handle_intent
+from db import get_connection
+
 app = Flask(__name__)
+CORS(app, origins=["*"], supports_credentials=True)
 
-# CORS: thay bằng domain của bạn nếu cần
-CORS(app, origins=["https://taxinhanhchong.com"], supports_credentials=True)
-
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key')  # Đổi thành chuỗi bí mật của bạn
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key')
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
@@ -25,14 +24,14 @@ def index():
 @app.route('/test_db')
 def test_db():
     try:
-        # Gọi hàm get_connection để kiểm tra kết nối
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT 1")  # Truy vấn đơn giản để kiểm tra kết nối
-        return "Kết nối cơ sở dữ liệu thành công!"
+        cursor.execute("SELECT 1")
+        cursor.close()
+        conn.close()
+        return "✅ Kết nối cơ sở dữ liệu thành công!"
     except Exception as e:
-        return f"Kết nối thất bại: {e}"
-
+        return f"❌ Kết nối thất bại: {e}"
 @app.route('/chat', methods=['POST'])
 def chat():
     user_input = request.json.get("message", "").strip().lower()
