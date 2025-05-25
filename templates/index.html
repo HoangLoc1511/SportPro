@@ -1,0 +1,139 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot SportPro</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+    h2 {
+      background: #111;
+      color: white;
+      text-align: center;
+      padding: 16px;
+      margin: 0;
+      font-size: 22px;
+    }
+    #chatbox {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    #chat {
+      padding: 20px;
+      height: 480px;
+      overflow-y: auto;
+      background: #fefefe;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .user, .bot {
+      max-width: 80%;
+      padding: 12px;
+      border-radius: 20px;
+      line-height: 1.5;
+      position: relative;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .user {
+      align-self: flex-end;
+      background: #dcf8c6;
+      border-bottom-right-radius: 0;
+    }
+    .bot {
+      align-self: flex-start;
+      background: #e7eaf0;
+      border-bottom-left-radius: 0;
+    }
+    #inputRow {
+      display: flex;
+      padding: 12px;
+      border-top: 1px solid #ccc;
+      background: #fff;
+    }
+    #userInput {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      outline: none;
+      font-size: 16px;
+    }
+    #sendBtn {
+      margin-left: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      background: #007bff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #sendBtn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h2>💬 Chatbot SportPro</h2>
+  <div id="chatbox">
+    <div id="chat">
+      <div class="bot">🤖 Xin chào! Bạn hãy nhắn "menu" hoặc chọn 1, 2, 3, 4 để bắt đầu nhé.</div>
+    </div>
+    <div id="inputRow">
+      <input type="text" id="userInput" placeholder="Nhập tin nhắn..." autofocus />
+      <button id="sendBtn">Gửi</button>
+    </div>
+  </div>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    function addMessage(role, message) {
+      const msg = document.createElement('div');
+      msg.className = role;
+      msg.innerText = message;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const msg = input.value.trim();
+      if (!msg) return;
+      addMessage('user', msg);
+      input.value = '';
+      input.focus();
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        addMessage('bot', data.reply);
+      } catch (error) {
+        addMessage('bot', '⚠️ Lỗi kết nối đến máy chủ.');
+      }
+    }
+
+    sendBtn.onclick = sendMessage;
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>
