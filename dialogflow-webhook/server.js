@@ -1,16 +1,16 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { WebhookClient, Payload } = require('dialogflow-fulfillment');
+const { WebhookClient } = require('dialogflow-fulfillment');
 const sql = require('mssql');
 
 const app = express();
 app.use(bodyParser.json());
 
-// Kết nối SQL Server (sửa lại user/pass nếu cần)
+// ===== CẤU HÌNH SQL SERVER =====
 const dbConfig = {
   user: 'sa',
   password: 'MatKhauMoi123!',
-  server: 'localhost', // dùng 'sql-xxxxx.database.windows.net' nếu dùng Azure SQL
+  server: 'localhost',
   database: 'SportPro',
   options: {
     encrypt: false,
@@ -18,19 +18,27 @@ const dbConfig = {
   }
 };
 
-// INTENT: Chào mừng
+// ===== INTENT: CHÀO MỪNG =====
 function handleWelcome(agent) {
   agent.add("🎉 Xin chào bạn đến với SportPro! Mình có thể giúp gì hôm nay?");
 }
 
-// INTENT: Tìm sản phẩm theo loại và giới tính
+// ===== INTENT: TÌM SẢN PHẨM =====
 async function handleSearchProduct(agent) {
   const productType = agent.parameters.product_type;
   const gender = agent.parameters.gender;
 
+  if (!productType || !gender) {
+    agent.add("❓ Bạn vui lòng cung cấp loại sản phẩm và giới tính cụ thể hơn nhé.");
+    return;
+  }
+
   try {
-    await sql.connect(dbConfig);
-    const result = await sql.query`SELECT TOP 3 name, price FROM products WHERE type = ${productType} AND gender = ${gender}`;
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('type', sql.NVarChar(50), productType.toLowerCase())
+      .input('gender', sql.NVarChar(20), gender.toLowerCase())
+      .query('SELECT TOP 3 name, price FROM products WHERE LOWER(type) = @type AND LOWER(gender) = @gender');
 
     if (result.recordset.length > 0) {
       let response = `🛍 Một số ${productType} cho ${gender} bạn có thể tham khảo:\n`;
@@ -41,62 +49,76 @@ async function handleSearchProduct(agent) {
     } else {
       agent.add(`😅 Hiện chưa có ${productType} dành cho ${gender}. Bạn thử sản phẩm khác nhé!`);
     }
-  } catch (err) {
-    console.error(err);
-    agent.add("🚨 Lỗi khi truy vấn sản phẩm.");
+  } catch (error) {
+    console.error("❌ Lỗi truy vấn sản phẩm:", error);
+    agent.add("🚨 Có lỗi xảy ra khi tìm sản phẩm.");
   }
 }
 
-// INTENT: Kiểm tra đơn hàng
+// ===== INTENT: KIỂM TRA ĐƠN HÀNG =====
 async function handleOrderSupport(agent) {
   const orderId = agent.parameters.order_id;
-  console.log("👉 order_id từ Dialogflow:", orderId);
+  if (!orderId) {
+    agent.add("⚠️ Bạn chưa cung cấp mã đơn hàng.");
+    return;
+  }
+
+  const upperOrderId = orderId.toUpperCase();
+  console.log("👉 orderId nhận từ người dùng:", orderId);
 
   try {
-    await sql.connect(dbConfig);
-    console.log("✅ Kết nối SQL thành công");
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('orderId', sql.VarChar(20), upperOrderId)
+      .query('SELECT * FROM orders WHERE UPPER(order_id) = @orderId');
 
-    const result = await sql.query`SELECT * FROM orders WHERE order_id = ${orderId}`;
     console.log("📄 Kết quả truy vấn:", result.recordset);
 
     if (result.recordset.length > 0) {
       const order = result.recordset[0];
       agent.add(`📦 Đơn hàng **${order.order_id}** của **${order.customer_name}**:\n- Sản phẩm: ${order.product}\n- Trạng thái: ${order.status}`);
     } else {
-      agent.add(`❌ Không tìm thấy đơn hàng **${orderId}**.`);
+      agent.add(`❌ Không tìm thấy đơn hàng **${upperOrderId}**.`);
     }
   } catch (error) {
-    console.error("❌ Lỗi SQL:", error);
+    console.error("❌ Lỗi khi kiểm tra đơn hàng:", error);
     agent.add("😓 Có lỗi khi kiểm tra đơn hàng.");
   }
 }
 
-// INTENT: Tìm cửa hàng theo khu vực
+// ===== INTENT: THÔNG TIN CỬA HÀNG =====
 async function handleStoreLocation(agent) {
   const location = agent.parameters.store_location?.toLowerCase().trim();
+  if (!location) {
+    agent.add("❓ Bạn vui lòng cung cấp tên khu vực cần tìm cửa hàng.");
+    return;
+  }
 
   try {
-    await sql.connect(dbConfig);
-    const result = await sql.query`SELECT * FROM stores WHERE location = ${location}`;
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('loc', sql.NVarChar(50), location)
+      .query('SELECT * FROM stores WHERE LOWER(location) = @loc');
 
     if (result.recordset.length > 0) {
       const store = result.recordset[0];
       const message = `🏬 Cửa hàng tại ${location}:\n📍 ${store.address}\n📞 ${store.phone}\n👉 Fanpage: ${store.fanpage_link}`;
       agent.add(message);
     } else {
-      agent.add("😅 Hiện chưa có cửa hàng ở khu vực đó. Bạn thử khu vực khác nhé!");
+      agent.add(`😅 Chưa có cửa hàng tại khu vực **${location}**.`);
     }
-  } catch (err) {
-    console.error(err);
-    agent.add("🚨 Lỗi khi lấy thông tin cửa hàng.");
+  } catch (error) {
+    console.error("❌ Lỗi khi lấy thông tin cửa hàng:", error);
+    agent.add("🚨 Có lỗi xảy ra khi tìm cửa hàng.");
   }
 }
 
-// INTENT: Hiển thị khuyến mãi
+// ===== INTENT: KHUYẾN MÃI =====
 async function handlePromotion(agent) {
   try {
-    await sql.connect(dbConfig);
-    const result = await sql.query`SELECT TOP 2 * FROM promotions ORDER BY promo_id DESC`;
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .query('SELECT TOP 2 * FROM promotions ORDER BY promo_id DESC');
 
     if (result.recordset.length > 0) {
       let promoMsg = "🔥 Khuyến mãi hiện tại:\n";
@@ -107,18 +129,18 @@ async function handlePromotion(agent) {
     } else {
       agent.add("😅 Hiện không có chương trình khuyến mãi nào.");
     }
-  } catch (err) {
-    console.error(err);
-    agent.add("🚨 Lỗi khi truy vấn khuyến mãi.");
+  } catch (error) {
+    console.error("❌ Lỗi khi truy vấn khuyến mãi:", error);
+    agent.add("🚨 Có lỗi khi lấy thông tin khuyến mãi.");
   }
 }
 
-// INTENT fallback
+// ===== INTENT: FALLBACK =====
 function handleFallback(agent) {
-  agent.add("❓ Mình chưa hiểu bạn nói gì. Bạn có thể thử lại?");
+  agent.add("❓ Mình chưa hiểu ý bạn lắm. Bạn có thể nói rõ hơn không?");
 }
 
-// MAPPING intent với function xử lý
+// ===== MAPPING INTENTS =====
 const intentMap = new Map();
 intentMap.set('WelcomeIntent', handleWelcome);
 intentMap.set('SearchProductIntent', handleSearchProduct);
@@ -127,14 +149,14 @@ intentMap.set('StoreLocationIntent', handleStoreLocation);
 intentMap.set('PromotionIntent', handlePromotion);
 intentMap.set('Default Fallback Intent', handleFallback);
 
-// ENDPOINT
+// ===== ROUTE =====
 app.post('/webhook', (req, res) => {
   const agent = new WebhookClient({ request: req, response: res });
   agent.handleRequest(intentMap);
 });
 
-// RUN SERVER
+// ===== START SERVER =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Webhook is running at http://localhost:${PORT}`);
+  console.log(`🚀 Webhook server is running at http://localhost:${PORT}`);
 });
