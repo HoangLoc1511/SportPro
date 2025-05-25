@@ -1,13 +1,33 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { WebhookClient } = require('dialogflow-fulfillment');
+const { WebhookClient, Payload } = require('dialogflow-fulfillment');
 
 const app = express();
 app.use(bodyParser.json());
 
 // ===== INTENT: CHÀO MỪNG =====
 function handleWelcome(agent) {
-  agent.add("🎉 Xin chào bạn đến với SportPro! Mình có thể giúp gì hôm nay?");
+  const welcomeMessage = {
+    richContent: [
+      [
+        {
+          type: "info",
+          title: "🎉 Chào mừng bạn đến với SportPro!",
+          subtitle: "Mình có thể giúp gì hôm nay?"
+        },
+        {
+          type: "chips",
+          options: [
+            { text: "🛍 Tìm sản phẩm" },
+            { text: "📦 Kiểm tra đơn hàng" },
+            { text: "🏬 Tìm cửa hàng" },
+            { text: "🔥 Xem khuyến mãi" }
+          ]
+        }
+      ]
+    ]
+  };
+  agent.add(new Payload(agent.UNSPECIFIED, welcomeMessage, { rawPayload: true, sendAsMessage: true }));
 }
 
 // ===== INTENT: TÌM SẢN PHẨM =====
@@ -51,7 +71,6 @@ function handleOrderSupport(agent) {
     return;
   }
 
-  // Dữ liệu mẫu
   const sampleOrders = {
     'HD001': {
       customer_name: 'Nguyễn Văn A',
