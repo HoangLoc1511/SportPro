@@ -1,13 +1,9 @@
-import mysql.connector
+from db import get_connection
 
 try:
-    conn = mysql.connector.connect(
-        host='118.68.201.19',
-        user='sa',
-        password='123456',
-        database='sportpro',
-        port=3306
-    )
-    print("✅ Kết nối MySQL thành công!")
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1")  # Truy vấn đơn giản để test
+    print("✅ Kết nối cơ sở dữ liệu thành công!")
 except Exception as e:
-    print(f"❌ Lỗi: {e}")
+    print(f"❌ Lỗi kết nối: {e}")
