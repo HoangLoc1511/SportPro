@@ -146,7 +146,11 @@ function handleStoreLocation(agent) {
     agent.add("📍 Bạn vui lòng nhập tên khu vực cụ thể như: Nha Trang, Vũng Tàu, Vinh...");
     return;
   }
-  location = location.toLowerCase().trim();
+ location = location.toLowerCase().trim();
+  if (!sampleStores[location]) {
+    agent.add("❌ Mình chưa nhận ra khu vực bạn nói. Bạn có thể thử lại như: Nha Trang, Vũng Tàu, Vinh.");
+    return;
+  }
   const store = sampleStores[location];
   if (store) {
     const message = `🏬 Cửa hàng tại ${location}:\n📍 Địa chỉ: ${store.address}\n📞 Hotline: ${store.phone}\n🌐 Fanpage: ${store.fanpage_link}`;
