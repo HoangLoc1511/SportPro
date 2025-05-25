@@ -3,4 +3,4 @@ flask-session
 flask-cors
 gunicorn
 pyodbc
-mysql-connector-python
+python-dotenv
