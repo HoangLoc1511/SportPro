@@ -1,10 +1,30 @@
+import os
 import pyodbc
 
 def get_connection():
-    conn = pyodbc.connect(
-        'DRIVER={ODBC Driver 17 for SQL Server};'
-        'SERVER=ADMIN-PC;'  # hoặc 'Tên_Máy_Tính' nếu từ máy khác
-        'DATABASE=sportpro;'  # thay bằng tên database của bạn
-        'Trusted_Connection=yes;'
-    )
-    return conn
+    # Lấy biến môi trường để cấu hình kết nối
+    server = os.getenv('DB_SERVER', 'localhost')
+    database = os.getenv('DB_NAME', 'sportpro')
+    username = os.getenv('DB_USER', '')
+    password = os.getenv('DB_PASS', '')
+    driver = '{ODBC Driver 17 for SQL Server}'
+
+    if username and password:
+        # Kết nối dùng SQL Server Authentication
+        conn_str = (
+            f'DRIVER={driver};'
+            f'SERVER={server};'
+            f'DATABASE={database};'
+            f'UID={username};'
+            f'PWD={password}'
+        )
+    else:
+        # Kết nối dùng Windows Authentication (chỉ dùng được trên Windows)
+        conn_str = (
+            f'DRIVER={driver};'
+            f'SERVER={server};'
+            f'DATABASE={database};'
+            'Trusted_Connection=yes;'
+        )
+
+    return pyodbc.connect(conn_str)
