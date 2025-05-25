@@ -1,18 +1,18 @@
 from flask import Flask, request, render_template, jsonify, session
 from flask_session import Session
-from flask_cors import CORS  # <-- import thư viện CORS
+from flask_cors import CORS
 import uuid
 from chatbot_logic import handle_intent
-from db import get_connection
 
 app = Flask(__name__)
-CORS(app, origins=["https://taxinhanhchong.com/"])  # <-- thêm dòng này để cho phép CORS với domain WordPress
 
-app.secret_key = 'secret-key'
+# CORS: thay bằng domain WordPress của bạn
+CORS(app, origins=["https://taxinhanhchong.com"], supports_credentials=True)
+
+app.secret_key = 'your-secret-key'  # Đổi thành chuỗi bí mật của bạn
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
-# Trang chính: chatbot UI
 @app.route('/')
 def index():
     if 'user_id' not in session:
@@ -25,63 +25,69 @@ def chat():
     user_input = request.json.get("message", "").strip().lower()
     current_intent = session.get('current_intent', None)
 
-    # Người dùng gọi menu hoặc chào hỏi
+    # Menu & intent chính
     if user_input in ['hi', 'hello', 'xin chào', 'chào', 'menu']:
         session['current_intent'] = "welcome"
-        return jsonify({"reply": handle_intent("welcome", user_input)})
+        reply = handle_intent("welcome", user_input)
+        return jsonify({"reply": reply})
 
-    # Người dùng chọn 1 - tư vấn sản phẩm
     if user_input in ['1', 'tư vấn', 'tư vấn sản phẩm']:
         session['current_intent'] = "product_advice"
-        return jsonify({"reply": handle_intent("product_advice", user_input)})
+        reply = handle_intent("product_advice", user_input)
+        return jsonify({"reply": reply})
 
-    # Người dùng chọn 2 - tra cứu đơn hàng
     if user_input in ['2', 'tra cứu', 'tra đơn', 'đơn hàng']:
         session['current_intent'] = "order_check_start"
-        return jsonify({"reply": handle_intent("order_check_start", user_input)})
+        reply = handle_intent("order_check_start", user_input)
+        return jsonify({"reply": reply})
 
-    # Người dùng chọn 3 - tìm cửa hàng
     if user_input in ['3', 'tìm cửa hàng', 'cửa hàng']:
         session['current_intent'] = "store_locator"
-        return jsonify({"reply": handle_intent("store_locator", user_input)})
+        reply = handle_intent("store_locator", user_input)
+        return jsonify({"reply": reply})
 
-    # Người dùng chọn 4 - hỏi chính sách
     if user_input in ['4', 'chính sách', 'faq']:
         session['current_intent'] = "faq"
-        return jsonify({"reply": handle_intent("faq", user_input)})
+        reply = handle_intent("faq", user_input)
+        return jsonify({"reply": reply})
 
-    # Xử lý luồng chi tiết dựa trên intent hiện tại
-
-    # Luồng tư vấn sản phẩm
+    # Xử lý theo luồng intent
     if current_intent == "product_advice":
         session['current_intent'] = "product_advice_details"
-        return jsonify({"reply": handle_intent("product_advice_details", user_input)})
+        reply = handle_intent("product_advice_details", user_input)
+        return jsonify({"reply": reply})
 
     if current_intent == "product_advice_details":
         session['current_intent'] = None
-        return jsonify({"reply": handle_intent("product_advice_details", user_input)})
+        reply = handle_intent("product_advice_details", user_input)
+        return jsonify({"reply": reply})
 
-    # Luồng tra cứu đơn hàng
     if current_intent == "order_check_start":
         session['current_intent'] = "order_check_details"
-        return jsonify({"reply": handle_intent("order_check_details", user_input)})
+        reply = handle_intent("order_check_details", user_input)
+        return jsonify({"reply": reply})
 
     if current_intent == "order_check_details":
         session['current_intent'] = None
-        return jsonify({"reply": handle_intent("order_check_details", user_input)})
+        reply = handle_intent("order_check_details", user_input)
+        return jsonify({"reply": reply})
 
-    # Luồng tìm cửa hàng
     if current_intent == "store_locator":
         session['current_intent'] = None
-        return jsonify({"reply": handle_intent("store_locator", user_input)})
+        reply = handle_intent("store_locator", user_input)
+        return jsonify({"reply": reply})
 
-    # Luồng hỏi chính sách
     if current_intent == "faq":
         session['current_intent'] = None
-        return jsonify({"reply": handle_intent("faq", user_input)})
+        reply = handle_intent("faq", user_input)
+        return jsonify({"reply": reply})
 
-    # Fallback khi không nhận dạng được intent
-    return jsonify({"reply": handle_intent("fallback", user_input)})
+    # Fallback
+    reply = handle_intent("fallback", user_input)
+    return jsonify({"reply": reply})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Port Render.com thường cung cấp qua biến môi trường PORT
+    import os
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
