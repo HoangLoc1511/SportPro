@@ -12,6 +12,7 @@ def get_connection():
         f'SERVER={server};'
         f'DATABASE={database};'
         'Trusted_Connection=yes;'
+        'TrustServerCertificate=yes;'
     )
 
     try:
