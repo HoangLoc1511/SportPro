@@ -6,7 +6,7 @@ from chatbot_logic import handle_intent
 from db import get_connection
 
 app = Flask(__name__)
-CORS(app, origins=["https://taxinhanhchong.com/"])  # <-- thêm dòng này để cho phép CORS với domain WordPress
+CORS(app, origins=["https://taxinhanhchong.com/trang-chu/"])  # <-- thêm dòng này để cho phép CORS với domain WordPress
 
 app.secret_key = 'secret-key'
 app.config['SESSION_TYPE'] = 'filesystem'
