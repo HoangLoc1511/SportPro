@@ -1,6 +1,6 @@
 Flask==2.2.3
 werkzeug==2.3.7
-gunicorn
-flask-session
-flask-cors
-pyodbc
+gunicorn==20.1.0
+flask-session==0.4.0
+flask-cors==3.0.10
+pyodbc==4.0.35
