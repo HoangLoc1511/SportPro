@@ -35,8 +35,18 @@ function handleSearchProduct(agent) {
   const productType = agent.parameters.product_type;
   const gender = agent.parameters.gender;
 
-  if (!productType || !gender) {
-    agent.add("❓ Bạn vui lòng cung cấp loại sản phẩm và giới tính cụ thể hơn nhé.");
+  if (!productType && !gender) {
+    agent.add("🛍 Bạn muốn tìm loại sản phẩm gì (ví dụ: giày thể thao, áo thể thao)? Cho nam hay nữ?");
+    return;
+  }
+
+  if (!productType) {
+    agent.add("📌 Bạn muốn tìm sản phẩm nào? Ví dụ: giày thể thao, áo thể thao?");
+    return;
+  }
+
+  if (!gender) {
+    agent.add("📌 Sản phẩm bạn cần dành cho nam hay nữ?");
     return;
   }
 
@@ -50,6 +60,17 @@ function handleSearchProduct(agent) {
       'nữ': ["Áo tanktop nữ - 400.000đ", "Áo thể thao Zumba - 430.000đ"]
     }
   };
+
+  const matched = sampleProducts[productType?.toLowerCase()]?.[gender?.toLowerCase()];
+
+  if (matched) {
+    let response = `🛍 Một số ${productType} cho ${gender} bạn có thể tham khảo:\n`;
+    matched.forEach(item => response += `• ${item}\n`);
+    agent.add(response);
+  } else {
+    agent.add(`😅 Hiện chưa có dữ liệu mẫu cho ${productType} dành cho ${gender}.`);
+  }
+}
 
   const matched = sampleProducts[productType?.toLowerCase()]?.[gender?.toLowerCase()];
 
