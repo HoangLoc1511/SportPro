@@ -1,22 +1,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { WebhookClient } = require('dialogflow-fulfillment');
-const sql = require('mssql');
 
 const app = express();
 app.use(bodyParser.json());
-
-// ===== CẤU HÌNH SQL SERVER =====
-const dbConfig = {
-  user: 'sa',
-  password: 'MatKhauMoi123!',
-  server: 'localhost',
-  database: 'SportPro',
-  options: {
-    encrypt: false,
-    trustServerCertificate: true
-  }
-};
 
 // ===== INTENT: CHÀO MỪNG =====
 function handleWelcome(agent) {
@@ -24,7 +11,7 @@ function handleWelcome(agent) {
 }
 
 // ===== INTENT: TÌM SẢN PHẨM =====
-async function handleSearchProduct(agent) {
+function handleSearchProduct(agent) {
   const productType = agent.parameters.product_type;
   const gender = agent.parameters.gender;
 
@@ -33,106 +20,120 @@ async function handleSearchProduct(agent) {
     return;
   }
 
-  try {
-    const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('type', sql.NVarChar(50), productType.toLowerCase())
-      .input('gender', sql.NVarChar(20), gender.toLowerCase())
-      .query('SELECT TOP 3 name, price FROM products WHERE LOWER(type) = @type AND LOWER(gender) = @gender');
-
-    if (result.recordset.length > 0) {
-      let response = `🛍 Một số ${productType} cho ${gender} bạn có thể tham khảo:\n`;
-      result.recordset.forEach(p => {
-        response += `• ${p.name} – ${p.price.toLocaleString()}đ\n`;
-      });
-      agent.add(response);
-    } else {
-      agent.add(`😅 Hiện chưa có ${productType} dành cho ${gender}. Bạn thử sản phẩm khác nhé!`);
+  const sampleProducts = {
+    'giày thể thao': {
+      'nam': ["Giày Nike Air Max - 1.200.000đ", "Giày Adidas Ultraboost - 1.500.000đ"],
+      'nữ': ["Giày Puma nữ - 980.000đ", "Giày Skechers nữ - 1.050.000đ"]
+    },
+    'áo thể thao': {
+      'nam': ["Áo Nike Dri-FIT - 450.000đ", "Áo Adidas nam - 500.000đ"],
+      'nữ': ["Áo tanktop nữ - 400.000đ", "Áo thể thao Zumba - 430.000đ"]
     }
-  } catch (error) {
-    console.error("❌ Lỗi truy vấn sản phẩm:", error);
-    agent.add("🚨 Có lỗi xảy ra khi tìm sản phẩm.");
+  };
+
+  const matched = sampleProducts[productType?.toLowerCase()]?.[gender?.toLowerCase()];
+
+  if (matched) {
+    let response = `🛍 Một số ${productType} cho ${gender} bạn có thể tham khảo:\n`;
+    matched.forEach(item => response += `• ${item}\n`);
+    agent.add(response);
+  } else {
+    agent.add(`😅 Hiện chưa có dữ liệu mẫu cho ${productType} dành cho ${gender}.`);
   }
 }
 
 // ===== INTENT: KIỂM TRA ĐƠN HÀNG =====
-async function handleOrderSupport(agent) {
+function handleOrderSupport(agent) {
   const orderId = agent.parameters.order_id;
+
   if (!orderId) {
     agent.add("⚠️ Bạn chưa cung cấp mã đơn hàng.");
     return;
   }
 
-  const upperOrderId = orderId.toUpperCase();
-  console.log("👉 orderId nhận từ người dùng:", orderId);
-
-  try {
-    const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('orderId', sql.VarChar(20), upperOrderId)
-      .query('SELECT * FROM orders WHERE UPPER(order_id) = @orderId');
-
-    console.log("📄 Kết quả truy vấn:", result.recordset);
-
-    if (result.recordset.length > 0) {
-      const order = result.recordset[0];
-      agent.add(`📦 Đơn hàng **${order.order_id}** của **${order.customer_name}**:\n- Sản phẩm: ${order.product}\n- Trạng thái: ${order.status}`);
-    } else {
-      agent.add(`❌ Không tìm thấy đơn hàng **${upperOrderId}**.`);
+  // Dữ liệu mẫu
+  const sampleOrders = {
+    'HD001': {
+      customer_name: 'Nguyễn Văn A',
+      product: 'Giày Nike Air Max',
+      status: 'Đang giao'
+    },
+    'HD002': {
+      customer_name: 'Trần Thị B',
+      product: 'Áo Adidas Run',
+      status: 'Đã giao'
     }
-  } catch (error) {
-    console.error("❌ Lỗi khi kiểm tra đơn hàng:", error);
-    agent.add("😓 Có lỗi khi kiểm tra đơn hàng.");
+  };
+
+  const order = sampleOrders[orderId.toUpperCase()];
+
+  if (order) {
+    agent.add(`📦 Đơn hàng **${orderId.toUpperCase()}** của **${order.customer_name}**:\n- Sản phẩm: ${order.product}\n- Trạng thái: ${order.status}`);
+  } else {
+    agent.add(`❌ Không tìm thấy đơn hàng **${orderId.toUpperCase()}**.`);
   }
 }
 
 // ===== INTENT: THÔNG TIN CỬA HÀNG =====
-async function handleStoreLocation(agent) {
-  const location = agent.parameters.store_location?.toLowerCase().trim();
+function handleStoreLocation(agent) {
+  let location = agent.parameters.store_location;
+
   if (!location) {
-    agent.add("❓ Bạn vui lòng cung cấp tên khu vực cần tìm cửa hàng.");
+    agent.add("❓ Bạn vui lòng nhập lại tên khu vực bạn cần tìm cửa hàng, ví dụ: Nha Trang, Vũng Tàu, Vinh...");
     return;
   }
 
-  try {
-    const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('loc', sql.NVarChar(50), location)
-      .query('SELECT * FROM stores WHERE LOWER(location) = @loc');
+  location = location.toLowerCase().trim();
 
-    if (result.recordset.length > 0) {
-      const store = result.recordset[0];
-      const message = `🏬 Cửa hàng tại ${location}:\n📍 ${store.address}\n📞 ${store.phone}\n👉 Fanpage: ${store.fanpage_link}`;
-      agent.add(message);
-    } else {
-      agent.add(`😅 Chưa có cửa hàng tại khu vực **${location}**.`);
+  const sampleStores = {
+    'nha trang': {
+      address: '01 Nguyễn Thị Minh Khai, Nha Trang',
+      phone: '0888 862426',
+      fanpage_link: 'https://www.facebook.com/SportproNhaTrang1'
+    },
+    'vũng tàu': {
+      address: '170 Nguyễn Văn Trỗi, Vũng Tàu',
+      phone: '0911 054356',
+      fanpage_link: 'https://www.facebook.com/SportproVungTau'
+    },
+    'vinh': {
+      address: '34 Nguyễn Văn Cừ, Vinh',
+      phone: '0254 3500 098',
+      fanpage_link: 'https://www.facebook.com/sportprovinh.vn'
     }
-  } catch (error) {
-    console.error("❌ Lỗi khi lấy thông tin cửa hàng:", error);
-    agent.add("🚨 Có lỗi xảy ra khi tìm cửa hàng.");
+  };
+
+  const store = sampleStores[location];
+
+  if (store) {
+    const message = `🏬 Cửa hàng tại ${location}:\n📍 Địa chỉ: ${store.address}\n📞 Hotline: ${store.phone}\n🌐 Fanpage: ${store.fanpage_link}`;
+    agent.add(message);
+  } else {
+    agent.add(`❌ Hiện tại chưa có cửa hàng nào ở khu vực "${location}". Bạn vui lòng thử khu vực khác nhé!`);
   }
 }
 
 // ===== INTENT: KHUYẾN MÃI =====
-async function handlePromotion(agent) {
-  try {
-    const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .query('SELECT TOP 2 * FROM promotions ORDER BY promo_id DESC');
-
-    if (result.recordset.length > 0) {
-      let promoMsg = "🔥 Khuyến mãi hiện tại:\n";
-      result.recordset.forEach(p => {
-        promoMsg += `• ${p.title}\n${p.description}\n🔗 ${p.link}\n\n`;
-      });
-      agent.add(promoMsg.trim());
-    } else {
-      agent.add("😅 Hiện không có chương trình khuyến mãi nào.");
+function handlePromotion(agent) {
+  const promotions = [
+    {
+      title: 'Giảm 50% giày Adidas',
+      description: 'Áp dụng toàn bộ mẫu Ultraboost đến hết 30/6.',
+      link: 'https://sportpro.vn/collections/adidas-sale-50'
+    },
+    {
+      title: 'Mua 2 tặng 1 áo thể thao',
+      description: 'Khuyến mãi đặc biệt cho thành viên từ 1/6–15/6.',
+      link: 'https://sportpro.vn/collections/ao-the-thao-khuyen-mai'
     }
-  } catch (error) {
-    console.error("❌ Lỗi khi truy vấn khuyến mãi:", error);
-    agent.add("🚨 Có lỗi khi lấy thông tin khuyến mãi.");
-  }
+  ];
+
+  let promoMsg = "🔥 Khuyến mãi hiện tại:\n";
+  promotions.forEach(p => {
+    promoMsg += `• ${p.title}\n${p.description}\n🔗 ${p.link}\n\n`;
+  });
+
+  agent.add(promoMsg.trim());
 }
 
 // ===== INTENT: FALLBACK =====
