@@ -7,19 +7,19 @@ from chatbot_logic import handle_intent
 
 app = Flask(__name__)
 
-# Cấu hình secret_key lấy từ biến môi trường, có giá trị mặc định nếu không set
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-default-secret-key')
+# Cấu hình CORS: thay bằng domain website bạn cho phép (vd: WordPress)
+CORS(app, origins=["https://taxinhanhchong.com"], supports_credentials=True)
 
-# Cấu hình session lưu trên filesystem
+# Lấy secret key từ biến môi trường
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
+
+# Cấu hình session lưu file hệ thống
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
-# CORS: chỉ cho phép domain cụ thể truy cập (thay domain này thành domain website của bạn)
-CORS(app, origins=["https://taxinhanhchong.com"], supports_credentials=True)
-
 @app.route('/')
 def index():
-    # Nếu chưa có user_id trong session thì tạo mới
+    # Tạo user_id session nếu chưa có
     if 'user_id' not in session:
         session['user_id'] = str(uuid.uuid4())
         session['current_intent'] = None
@@ -30,7 +30,7 @@ def chat():
     user_input = request.json.get("message", "").strip().lower()
     current_intent = session.get('current_intent', None)
 
-    # Xử lý các intent menu chính
+    # Xử lý menu chính & intent chính
     if user_input in ['hi', 'hello', 'xin chào', 'chào', 'menu']:
         session['current_intent'] = "welcome"
         reply = handle_intent("welcome", user_input)
@@ -56,7 +56,7 @@ def chat():
         reply = handle_intent("faq", user_input)
         return jsonify({"reply": reply})
 
-    # Xử lý các luồng intent con
+    # Xử lý các intent theo luồng
     if current_intent == "product_advice":
         session['current_intent'] = "product_advice_details"
         reply = handle_intent("product_advice_details", user_input)
@@ -87,10 +87,21 @@ def chat():
         reply = handle_intent("faq", user_input)
         return jsonify({"reply": reply})
 
-    # Fallback: không hiểu câu hỏi
+    # Fallback nếu không hiểu input
     reply = handle_intent("fallback", user_input)
     return jsonify({"reply": reply})
 
+# Route test biến môi trường (xóa hoặc comment sau khi test xong)
+@app.route('/env')
+def env():
+    return {
+        "DB_SERVER": os.getenv('DB_SERVER'),
+        "DB_NAME": os.getenv('DB_NAME'),
+        "DB_USER": os.getenv('DB_USER'),
+        "FLASK_SECRET_KEY": os.getenv('FLASK_SECRET_KEY'),
+        "PORT": os.getenv('PORT')
+    }
+
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.getenv('PORT', '10000'))
     app.run(host='0.0.0.0', port=port)
