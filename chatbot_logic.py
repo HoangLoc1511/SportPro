@@ -1,4 +1,3 @@
-# ✅ chatbot_logic.py – xử lý intent và truy vấn SQL nâng cao
 from db import get_connection
 import re
 
@@ -33,17 +32,20 @@ def handle_intent(intent, user_input):
             if brand in keyword:
                 return f"\U0001F525 Bộ sưu tập {brand.capitalize()}: {brand_links[brand]}"
 
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT product_name, price, color, size, image_url
-            FROM products
-            WHERE product_name LIKE ? OR color LIKE ? OR size LIKE ?
-        """, ('%' + keyword + '%', '%' + keyword + '%', '%' + keyword + '%'))
-
-        columns = [column[0] for column in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        conn.close()
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT product_name, price, color, size, image_url
+                        FROM products
+                        WHERE product_name LIKE ? OR color LIKE ? OR size LIKE ?
+                    """, ('%' + keyword + '%', '%' + keyword + '%', '%' + keyword + '%'))
+                    columns = [column[0] for column in cursor.description]
+                    results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except Exception as e:
+            # Log error nếu có hệ thống logging (đề xuất)
+            # logger.error(f"Lỗi truy vấn sản phẩm: {e}")
+            return f"⚠️ Lỗi hệ thống khi tìm sản phẩm. Vui lòng thử lại sau."
 
         if results:
             return "\n\n".join([
@@ -56,23 +58,25 @@ def handle_intent(intent, user_input):
                 "Bạn có thể thử lại với tên sản phẩm hoặc thương hiệu khác như: 'áo thể thao', 'giày nike', 'túi adidas'..."
             )
 
+    # ---------- 2. TRA CỨU ĐƠN HÀNG ----------
     elif intent == "order_check_start":
         return "\U0001F4E6 Vui lòng nhập mã đơn hàng của bạn (ví dụ: SP20230501):"
 
     elif intent == "order_check_details":
         order_id = user_input.strip()
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT o.order_id, o.status, o.total_amount, o.order_date, c.full_name, o.delivery_address
-            FROM orders o
-            JOIN customers c ON o.customer_id = c.customer_id
-            WHERE o.order_id = ?
-        """, (order_id,))
-
-        columns = [column[0] for column in cursor.description]
-        row = cursor.fetchone()
-        conn.close()
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT o.order_id, o.status, o.total_amount, o.order_date, c.full_name, o.delivery_address
+                        FROM orders o
+                        JOIN customers c ON o.customer_id = c.customer_id
+                        WHERE o.order_id = ?
+                    """, (order_id,))
+                    columns = [column[0] for column in cursor.description]
+                    row = cursor.fetchone()
+        except Exception as e:
+            return f"⚠️ Lỗi hệ thống khi tra cứu đơn hàng. Vui lòng thử lại sau."
 
         if row:
             result = dict(zip(columns, row))
@@ -90,42 +94,47 @@ def handle_intent(intent, user_input):
     # ---------- 3. TÌM CỬA HÀNG ----------
     elif intent == "store_locator":
         keyword = user_input.lower()
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT store_name, address, phone, opening_hours
-            FROM stores
-            WHERE city LIKE ?
-        """, ('%' + keyword + '%',))
-
-        columns = [column[0] for column in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        conn.close()
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT store_name, address, phone, opening_hours
+                        FROM stores
+                        WHERE city LIKE ?
+                    """, ('%' + keyword + '%',))
+                    columns = [column[0] for column in cursor.description]
+                    results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except Exception as e:
+            return f"⚠️ Lỗi hệ thống khi tìm cửa hàng. Vui lòng thử lại sau."
 
         if results:
             return "\n\n".join([
-                f"\U0001F3EC {row['store_name']}\n\U0001F4CD {row['address']}\n\U0001F4DE {row['phone']}\n🕒 Giờ mở cửa: {row['opening_hours']}" for row in results
+                f"\U0001F3EC {row['store_name']}\n\U0001F4CD {row['address']}\n\U0001F4DE {row['phone']}\n🕒 Giờ mở cửa: {row['opening_hours']}"
+                for row in results
             ])
-        return "\u274C Mình không tìm thấy cửa hàng nào ở khu vực bạn cung cấp. Bạn thử tên khác nhé!"
+        else:
+            return "\u274C Mình không tìm thấy cửa hàng nào ở khu vực bạn cung cấp. Bạn thử tên khác nhé!"
 
     # ---------- 4. HỎI VỀ CHÍNH SÁCH ----------
     elif intent == "faq":
         keyword = user_input.lower()
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT question, answer FROM faqs WHERE topic LIKE ?
-        """, ('%' + keyword + '%',))
-
-        columns = [column[0] for column in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        conn.close()
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT question, answer FROM faqs WHERE topic LIKE ?
+                    """, ('%' + keyword + '%',))
+                    columns = [column[0] for column in cursor.description]
+                    results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except Exception as e:
+            return f"⚠️ Lỗi hệ thống khi tìm hiểu chính sách. Vui lòng thử lại sau."
 
         if results:
             return "\n\n".join([
                 f"\u2753 {row['question']}\n\U0001F4A1 {row['answer']}" for row in results
             ])
-        return "\u274C Mình chưa có thông tin về chính sách đó. Bạn có thể hỏi: vận chuyển, đổi trả, bảo hành..."
+        else:
+            return "\u274C Mình chưa có thông tin về chính sách đó. Bạn có thể hỏi: vận chuyển, đổi trả, bảo hành..."
 
     # ---------- MẶC ĐỊNH ----------
     else:
