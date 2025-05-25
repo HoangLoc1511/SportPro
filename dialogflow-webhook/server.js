@@ -32,9 +32,10 @@ function handleWelcome(agent) {
 
 // ===== INTENT: TÌM SẢN PHẨM =====
 function handleSearchProduct(agent) {
-  const productType = agent.parameters.product_type;
-  const gender = agent.parameters.gender;
+  const rawType = agent.parameters.product_type;
+  const rawGender = agent.parameters.gender;
 
+  // Dữ liệu mẫu
   const sampleProducts = {
     'giày thể thao': {
       'nam': ["Giày Nike Air Max - 1.200.000đ", "Giày Adidas Ultraboost - 1.500.000đ"],
@@ -46,11 +47,19 @@ function handleSearchProduct(agent) {
     }
   };
 
+  const validProductTypes = Object.keys(sampleProducts);
+  const validGenders = ["nam", "nữ"];
+
+  const productType = rawType ? rawType.toLowerCase() : null;
+  const gender = rawGender ? rawGender.toLowerCase() : null;
+
+  // Kiểm tra cả hai đều thiếu
   if (!productType && !gender) {
-    agent.add("🛍 Bạn muốn tìm loại sản phẩm gì (ví dụ: giày thể thao, áo thể thao)? Cho nam hay nữ?");
+    agent.add("🛍 Bạn muốn tìm sản phẩm gì (giày thể thao, áo thể thao)? Cho nam hay nữ?");
     return;
   }
 
+  // Kiểm tra thiếu từng phần
   if (!productType) {
     agent.add("📌 Bạn muốn tìm sản phẩm nào? Ví dụ: giày thể thao, áo thể thao?");
     return;
@@ -61,13 +70,24 @@ function handleSearchProduct(agent) {
     return;
   }
 
-  const typeKey = productType.toLowerCase();
-  const genderKey = gender.toLowerCase();
-  const matched = sampleProducts[typeKey]?.[genderKey];
+  // Kiểm tra có đúng định dạng dữ liệu không
+  if (!validProductTypes.includes(productType)) {
+    agent.add("❗ Loại sản phẩm bạn nhập chưa có. Bạn có thể chọn: giày thể thao hoặc áo thể thao.");
+    return;
+  }
 
-  if (matched) {
+  if (!validGenders.includes(gender)) {
+    agent.add("❗ Giới tính chưa đúng. Bạn muốn tìm cho nam hay nữ?");
+    return;
+  }
+
+  const matchedProducts = sampleProducts[productType][gender];
+
+  if (matchedProducts && matchedProducts.length > 0) {
     let response = `🛍 Một số ${productType} cho ${gender} bạn có thể tham khảo:\n`;
-    matched.forEach(item => response += `• ${item}\n`);
+    matchedProducts.forEach(item => {
+      response += `• ${item}\n`;
+    });
     agent.add(response);
   } else {
     agent.add(`😅 Hiện chưa có dữ liệu mẫu cho ${productType} dành cho ${gender}.`);
