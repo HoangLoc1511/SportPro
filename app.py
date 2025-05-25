@@ -1,10 +1,13 @@
 from flask import Flask, request, render_template, jsonify, session
-from chatbot_logic import handle_intent
 from flask_session import Session
+from flask_cors import CORS  # <-- import thư viện CORS
 import uuid
+from chatbot_logic import handle_intent
 from db import get_connection
 
 app = Flask(__name__)
+CORS(app, origins=["https://taxinhanhchong.com/"])  # <-- thêm dòng này để cho phép CORS với domain WordPress
+
 app.secret_key = 'secret-key'
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
