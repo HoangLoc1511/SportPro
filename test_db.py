@@ -1,17 +1,13 @@
-import pyodbc
-
-def get_connection():
-    conn = pyodbc.connect(
-        'DRIVER={ODBC Driver 17 for SQL Server};'
-        'SERVER=ADMIN-PC;'  # hoặc 'Tên_Máy_Tính' nếu từ máy khác
-        'DATABASE=sportpro;'  # thay bằng tên database của bạn
-        'Trusted_Connection=yes;'
-    )
-    return conn
+import mysql.connector
 
 try:
-    conn = get_connection()
-    print("✅ Kết nối thành công!")
-    conn.close()
+    conn = mysql.connector.connect(
+        host='your-public-ip',
+        user='root',
+        password='123456',
+        database='sportpro',
+        port=3306
+    )
+    print("✅ Kết nối MySQL thành công!")
 except Exception as e:
-    print("❌ Kết nối thất bại:", e)
+    print(f"❌ Lỗi: {e}")
