@@ -35,6 +35,17 @@ function handleSearchProduct(agent) {
   const productType = agent.parameters.product_type;
   const gender = agent.parameters.gender;
 
+  const sampleProducts = {
+    'giày thể thao': {
+      'nam': ["Giày Nike Air Max - 1.200.000đ", "Giày Adidas Ultraboost - 1.500.000đ"],
+      'nữ': ["Giày Puma nữ - 980.000đ", "Giày Skechers nữ - 1.050.000đ"]
+    },
+    'áo thể thao': {
+      'nam': ["Áo Nike Dri-FIT - 450.000đ", "Áo Adidas nam - 500.000đ"],
+      'nữ': ["Áo tanktop nữ - 400.000đ", "Áo thể thao Zumba - 430.000đ"]
+    }
+  };
+
   if (!productType && !gender) {
     agent.add("🛍 Bạn muốn tìm loại sản phẩm gì (ví dụ: giày thể thao, áo thể thao)? Cho nam hay nữ?");
     return;
@@ -50,29 +61,9 @@ function handleSearchProduct(agent) {
     return;
   }
 
-  const sampleProducts = {
-    'giày thể thao': {
-      'nam': ["Giày Nike Air Max - 1.200.000đ", "Giày Adidas Ultraboost - 1.500.000đ"],
-      'nữ': ["Giày Puma nữ - 980.000đ", "Giày Skechers nữ - 1.050.000đ"]
-    },
-    'áo thể thao': {
-      'nam': ["Áo Nike Dri-FIT - 450.000đ", "Áo Adidas nam - 500.000đ"],
-      'nữ': ["Áo tanktop nữ - 400.000đ", "Áo thể thao Zumba - 430.000đ"]
-    }
-  };
-
-  const matched = sampleProducts[productType?.toLowerCase()]?.[gender?.toLowerCase()];
-
-  if (matched) {
-    let response = `🛍 Một số ${productType} cho ${gender} bạn có thể tham khảo:\n`;
-    matched.forEach(item => response += `• ${item}\n`);
-    agent.add(response);
-  } else {
-    agent.add(`😅 Hiện chưa có dữ liệu mẫu cho ${productType} dành cho ${gender}.`);
-  }
-}
-
-  const matched = sampleProducts[productType?.toLowerCase()]?.[gender?.toLowerCase()];
+  const typeKey = productType.toLowerCase();
+  const genderKey = gender.toLowerCase();
+  const matched = sampleProducts[typeKey]?.[genderKey];
 
   if (matched) {
     let response = `🛍 Một số ${productType} cho ${gender} bạn có thể tham khảo:\n`;
@@ -149,7 +140,7 @@ function handleStoreLocation(agent) {
     const message = `🏬 Cửa hàng tại ${location}:\n📍 Địa chỉ: ${store.address}\n📞 Hotline: ${store.phone}\n🌐 Fanpage: ${store.fanpage_link}`;
     agent.add(message);
   } else {
-    agent.add(`❌ Hiện tại chưa có cửa hàng nào ở khu vực "${location}". Bạn vui lòng thử khu vực khác nhé!`);
+    agent.add(`❌ Hiện tại chưa có cửa hàng nào ở khu vực \"${location}\". Bạn vui lòng thử khu vực khác nhé!`);
   }
 }
 
