@@ -7,7 +7,7 @@ from flask_cors import CORS
 from chatbot_logic import handle_intent
 from db import get_connection
 
-# Cấu hình logging
+# Cấu hình logging để theo dõi lỗi và thông tin
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 app = Flask(__name__)
@@ -16,7 +16,7 @@ app = Flask(__name__)
 CORS(app, origins=["https://taxinhanhchong.com"], supports_credentials=True)
 
 # Cấu hình session
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key')  # Đổi thành chuỗi bí mật của bạn
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'a8f5f167f44f4964e6c998dee827110c')  # Đổi thành chuỗi bí mật của bạn
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
@@ -111,6 +111,7 @@ def chat():
         return jsonify({"reply": reply})
 
     except Exception as e:
+        # Log lỗi
         logging.error(f"Lỗi xử lý yêu cầu chat: {e}")
         return jsonify({"reply": "❌ Đã xảy ra lỗi, vui lòng thử lại sau."})
 
