@@ -4,37 +4,26 @@ import logging
 from flask import Flask, request, render_template, jsonify, session
 from flask_session import Session
 from flask_cors import CORS
-from chatbot_logic import handle_intent  # Importing chatbot logic
-from db import get_connection  # Importing database connection
-import requests
+from chatbot_logic import handle_intent  # Import chatbot logic
+from db import get_connection  # Import database connection
 
-# Địa chỉ API của bạn
-url = "http://localhost:10000/chat"
-
-# Dữ liệu JSON cần gửi
-data = {"message": "hi"}
-
-# Gửi yêu cầu POST
-response = requests.post(url, json=data)
-
-# In kết quả trả về từ API
-print(response.json())
 # Configure logging to track errors and info
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
+# Initialize the Flask application
 app = Flask(__name__)
 
-# CORS: Allow specific domains for security
+# CORS: Allow specific domains for security (you can replace with your domain)
 CORS(app, origins=["https://taxinhanhchong.com"], supports_credentials=True)
 
-# Configure session
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'a8f5f167f44f4964e6c998dee827110c')  # Replace with your secret key
+# Configure session to keep track of user data
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key')  # Replace with your secret key
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
 @app.route('/')
 def index():
-    # Generate user_id if not present in the session
+    # Create a new user_id if not in the session
     if 'user_id' not in session:
         session['user_id'] = str(uuid.uuid4())
         session['current_intent'] = None
@@ -46,7 +35,7 @@ def test_db():
         # Test DB connection
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT 1")
+        cursor.execute("SELECT 1")  # Simple query to test connection
         cursor.close()
         conn.close()
         logging.info("Database connection successful.")
@@ -58,15 +47,17 @@ def test_db():
 @app.route('/query', methods=['GET'])
 def query_db():
     try:
+        # Fetch products from the database
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT product_name, price FROM products")  # Query the database
+        cursor.execute("SELECT product_name, price FROM products")  # Query to fetch products
         rows = cursor.fetchall()
 
+        # Prepare results as a list of dictionaries
         results = [{'product_name': row[0], 'price': row[1]} for row in rows]
         cursor.close()
         conn.close()
-        return jsonify(results)  # Return the results in JSON format
+        return jsonify(results)  # Return the results as JSON
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -82,6 +73,7 @@ def chat():
             reply = handle_intent("welcome", user_input)
             return jsonify({"reply": reply})
 
+        # Process other intents like product advice, order check, etc.
         if user_input in ['1', 'tư vấn', 'tư vấn sản phẩm']:
             session['current_intent'] = "product_advice"
             reply = handle_intent("product_advice", user_input)
@@ -123,5 +115,5 @@ def chat():
 
 # Start Flask app
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))  # Port provided by Render
+    port = int(os.environ.get("PORT", 10000))  # Port provided by Render or environment variable
     app.run(debug=True, host='0.0.0.0', port=port)
