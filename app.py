@@ -42,7 +42,23 @@ def test_db():
     except Exception as e:
         logging.error(f"Lỗi kết nối cơ sở dữ liệu: {e}")
         return f"❌ Kết nối thất bại: {e}"
+# Route để truy vấn và trả kết quả ra HTML
+@app.route('/query', methods=['GET'])
+def query_db():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT product_name, price FROM products")  # Truy vấn cơ sở dữ liệu
+        rows = cursor.fetchall()  # Lấy tất cả kết quả truy vấn
 
+        # Chuyển kết quả truy vấn thành dạng danh sách
+        results = [{'product_name': row[0], 'price': row[1]} for row in rows]
+        cursor.close()
+        conn.close()
+
+        return jsonify(results)  # Trả lại kết quả dưới dạng JSON
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
