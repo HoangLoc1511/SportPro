@@ -5,21 +5,12 @@ logging.basicConfig(level=logging.INFO)
 
 def handle_intent(intent, user_input):
     try:
+        # Handle each intent based on the user input
         if intent == "welcome":
-            return (
-                "🎉 Xin chào! Mình là trợ lý SportPro.\n"
-                "Bạn muốn:\n"
-                "1. Tư vấn sản phẩm\n"
-                "2. Tra cứu đơn hàng\n"
-                "3. Tìm cửa hàng\n"
-                "4. Chính sách mua hàng"
-            )
+            return "🎉 Xin chào! Mình là trợ lý SportPro. Bạn muốn:\n1. Tư vấn sản phẩm\n2. Tra cứu đơn hàng\n3. Tìm cửa hàng\n4. Chính sách mua hàng"
 
         elif intent == "product_advice":
-            return (
-                "📦 Bạn muốn tư vấn sản phẩm nào?\n"
-                "Hãy nhập tên sản phẩm (giày, quần áo...) hoặc thương hiệu (Nike, Adidas)."
-            )
+            return "📦 Bạn muốn tư vấn sản phẩm nào? Hãy nhập tên sản phẩm (giày, quần áo...) hoặc thương hiệu (Nike, Adidas)."
 
         elif intent == "product_advice_details":
             conn = get_connection()
@@ -36,10 +27,7 @@ def handle_intent(intent, user_input):
             conn.close()
 
             if rows:
-                return "\n\n".join([
-                    f"✔ {r[0]}\nMàu: {r[2]} | Size: {r[3]}\nGiá: {r[1]} VND\nẢnh: {r[4]}"
-                    for r in rows
-                ])
+                return "\n\n".join([f"✔ {r[0]}\nMàu: {r[2]} | Size: {r[3]}\nGiá: {r[1]} VND\nẢnh: {r[4]}" for r in rows])
             else:
                 return "❌ Không tìm thấy sản phẩm phù hợp. Vui lòng thử lại."
 
@@ -61,14 +49,7 @@ def handle_intent(intent, user_input):
             conn.close()
 
             if row:
-                return (
-                    f"📋 Đơn hàng: {row[0]}\n"
-                    f"👤 Khách: {row[1]}\n"
-                    f"📅 Ngày: {row[2]}\n"
-                    f"🧾 Trạng thái: {row[3]}\n"
-                    f"💰 Tổng: {row[4]} VND\n"
-                    f"📍 Giao đến: {row[5]}"
-                )
+                return f"📋 Đơn hàng: {row[0]}\n👤 Khách: {row[1]}\n📅 Ngày: {row[2]}\n🧾 Trạng thái: {row[3]}\n💰 Tổng: {row[4]} VND\n📍 Giao đến: {row[5]}"
             else:
                 return "❌ Mã đơn không tồn tại. Vui lòng kiểm tra lại."
 
@@ -86,10 +67,7 @@ def handle_intent(intent, user_input):
             conn.close()
 
             if results:
-                return "\n\n".join([
-                    f"🏬 {r[0]}\n📍 {r[1]}\n📞 {r[2]}\n🕒 Giờ mở: {r[3]}"
-                    for r in results
-                ])
+                return "\n\n".join([f"🏬 {r[0]}\n📍 {r[1]}\n📞 {r[2]}\n🕒 Giờ mở: {r[3]}" for r in results])
             else:
                 return "❌ Không tìm thấy cửa hàng ở khu vực bạn cung cấp."
 
@@ -105,9 +83,7 @@ def handle_intent(intent, user_input):
             conn.close()
 
             if faqs:
-                return "\n\n".join([
-                    f"❓ {q}\n💡 {a}" for q, a in faqs
-                ])
+                return "\n\n".join([f"❓ {q}\n💡 {a}" for q, a in faqs])
             else:
                 return "❌ Không có chính sách nào phù hợp với câu hỏi của bạn."
 
