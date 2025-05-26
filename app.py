@@ -21,6 +21,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
 @app.route('/')
+
 def index():
     # Tạo user_id mới nếu chưa có session
     if 'user_id' not in session:
@@ -59,6 +60,7 @@ def query_db():
         return jsonify(results)  # Trả lại kết quả dưới dạng JSON
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
