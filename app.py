@@ -131,6 +131,60 @@ def chat():
         logging.error(f"Lỗi xử lý yêu cầu chat: {e}")
         return jsonify({"reply": "❌ Đã xảy ra lỗi, vui lòng thử lại sau."})
 
+def handle_intent(intent, user_input):
+    """
+    Xử lý các intent của chatbot, bao gồm tư vấn sản phẩm, tra cứu đơn hàng, tìm cửa hàng, và chính sách.
+    """
+    if intent == "welcome":
+        return "Chào bạn! Bạn muốn làm gì hôm nay? (Chọn 1, 2, 3, 4)"
+
+    elif intent == "product_advice":
+        return "Bạn muốn tư vấn sản phẩm nào? Ví dụ: giày, quần áo, dụng cụ thể thao..."
+
+    elif intent == "product_advice_details":
+        # Xử lý theo loại sản phẩm, ví dụ: giày, quần áo, hoặc các thương hiệu
+        if 'giày' in user_input:
+            return "Chúng tôi có các mẫu giày Nike, Adidas. Bạn muốn chọn mẫu nào?"
+        elif 'quần áo' in user_input:
+            return "Bạn muốn chọn quần áo thể thao nào? Chúng tôi có nhiều mẫu của Adidas và Nike."
+        else:
+            return "Chúng tôi không hiểu yêu cầu của bạn. Hãy thử lại."
+
+    elif intent == "order_check_start":
+        return "Vui lòng nhập mã đơn hàng của bạn."
+
+    elif intent == "order_check_details":
+        # Giả sử ta tra cứu thông tin đơn hàng từ CSDL
+        return check_order_status(user_input)
+
+    elif intent == "store_locator":
+        return "Bạn muốn tìm cửa hàng ở đâu?"
+
+    elif intent == "faq":
+        return "Bạn muốn hỏi về chính sách nào? (Vận chuyển, đổi trả, bảo hành)"
+
+    elif intent == "fallback":
+        return "Xin lỗi, tôi không hiểu yêu cầu của bạn. Vui lòng thử lại."
+
+    return "Tôi không hiểu yêu cầu của bạn. Vui lòng thử lại."
+
+def check_order_status(order_id):
+    """
+    Kiểm tra trạng thái đơn hàng từ cơ sở dữ liệu.
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM orders WHERE order_id = ?", (order_id,))
+        order = cursor.fetchone()
+        if order:
+            return f"Đơn hàng {order[0]} hiện tại có trạng thái {order[3]}."
+        else:
+            return "Không tìm thấy đơn hàng với mã này."
+    except Exception as e:
+        logging.error(f"Lỗi tra cứu đơn hàng: {e}")
+        return "Đã xảy ra lỗi khi tra cứu đơn hàng."
+
 if __name__ == '__main__':
     # Port Render.com thường cung cấp qua biến môi trường PORT
     port = int(os.environ.get("PORT", 10000))
