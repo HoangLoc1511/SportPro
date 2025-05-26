@@ -6,7 +6,19 @@ from flask_session import Session
 from flask_cors import CORS
 from chatbot_logic import handle_intent  # Importing chatbot logic
 from db import get_connection  # Importing database connection
+import requests
 
+# Địa chỉ API của bạn
+url = "http://localhost:10000/chat"
+
+# Dữ liệu JSON cần gửi
+data = {"message": "hi"}
+
+# Gửi yêu cầu POST
+response = requests.post(url, json=data)
+
+# In kết quả trả về từ API
+print(response.json())
 # Configure logging to track errors and info
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
